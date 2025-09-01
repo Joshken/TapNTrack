@@ -7,17 +7,26 @@ import android.widget.EditText
 import android.widget.ImageView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import android.util.Patterns
+import com.example.tapntrack.mvp.model.UserRepository
+import com.example.tapntrack.mvp.presenter.IForgotPasswordPresenter
+import com.example.tapntrack.mvp.presenter.ForgotPasswordPresenter
+import com.example.tapntrack.mvp.view.IForgotPasswordView
 
-class ActivityForgotPassword : AppCompatActivity() {
+class ActivityForgotPassword : AppCompatActivity(), IForgotPasswordView {
 
     private lateinit var emailInput: EditText
     private lateinit var sendResetCodeButton: Button
     private lateinit var backButton: ImageView
+    
+    private lateinit var presenter: IForgotPasswordPresenter
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_forgot_password)
+
+        // Initialize presenter
+        presenter = ForgotPasswordPresenter(UserRepository())
+        presenter.attachView(this)
 
         // Initialize views
         emailInput = findViewById(R.id.emailInput)
@@ -26,35 +35,49 @@ class ActivityForgotPassword : AppCompatActivity() {
 
         // Set up click listeners
         sendResetCodeButton.setOnClickListener {
-            sendResetCode()
+            val email = emailInput.text.toString().trim()
+            presenter.sendResetCode(email)
         }
 
         backButton.setOnClickListener {
-            finish() // Go back to previous activity
+            presenter.onBackClicked()
         }
     }
 
-    private fun sendResetCode() {
-        val email = emailInput.text.toString().trim()
+    override fun showProgress() {
+        // Show loading indicator if needed
+    }
 
-        // Validation
-        if (email.isEmpty()) {
-            emailInput.error = "Email is required"
-            return
-        }
+    override fun hideProgress() {
+        // Hide loading indicator if needed
+    }
 
-        if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
-            emailInput.error = "Please enter a valid email address"
-            return
-        }
-
-        // For demo purposes, show success message and navigate to next screen
-        // In a real app, you would send the reset code to the email
+    override fun onResetCodeSent(email: String) {
         Toast.makeText(this, "Reset code sent to $email", Toast.LENGTH_SHORT).show()
-        
-        // Navigate to Sent OTP screen
+    }
+
+    override fun onResetCodeFailed(message: String) {
+        Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+    }
+
+    override fun showValidationError(field: String, message: String) {
+        when (field) {
+            "email" -> emailInput.error = message
+        }
+    }
+
+    override fun navigateToSentOtp(email: String) {
         val intent = Intent(this, ActivitySentOtp::class.java)
         intent.putExtra("email", email)
         startActivity(intent)
+    }
+
+    override fun navigateBack() {
+        finish() // Go back to previous activity
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        presenter.detachView()
     }
 }

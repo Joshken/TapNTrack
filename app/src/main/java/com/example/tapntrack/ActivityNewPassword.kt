@@ -7,17 +7,27 @@ import android.widget.EditText
 import android.widget.ImageView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import com.example.tapntrack.mvp.model.UserRepository
+import com.example.tapntrack.mvp.presenter.INewPasswordPresenter
+import com.example.tapntrack.mvp.presenter.NewPasswordPresenter
+import com.example.tapntrack.mvp.view.INewPasswordView
 
-class ActivityNewPassword : AppCompatActivity() {
+class ActivityNewPassword : AppCompatActivity(), INewPasswordView {
 
     private lateinit var newPasswordInput: EditText
     private lateinit var confirmNewPasswordInput: EditText
     private lateinit var resetPasswordButton: Button
     private lateinit var backButton: ImageView
+    
+    private lateinit var presenter: INewPasswordPresenter
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_new_password)
+
+        // Initialize presenter
+        presenter = NewPasswordPresenter(UserRepository())
+        presenter.attachView(this)
 
         // Initialize views
         newPasswordInput = findViewById(R.id.newPasswordInput)
@@ -27,45 +37,50 @@ class ActivityNewPassword : AppCompatActivity() {
 
         // Set up click listeners
         resetPasswordButton.setOnClickListener {
-            resetPassword()
+            val newPassword = newPasswordInput.text.toString().trim()
+            val confirmPassword = confirmNewPasswordInput.text.toString().trim()
+            presenter.resetPassword(newPassword, confirmPassword)
         }
 
         backButton.setOnClickListener {
-            finish() // Go back to previous activity
+            presenter.onBackClicked()
         }
     }
 
-    private fun resetPassword() {
-        val newPassword = newPasswordInput.text.toString().trim()
-        val confirmPassword = confirmNewPasswordInput.text.toString().trim()
+    override fun showProgress() {
+        // Show loading indicator if needed
+    }
 
-        // Validation
-        if (newPassword.isEmpty()) {
-            newPasswordInput.error = "New password is required"
-            return
-        }
+    override fun hideProgress() {
+        // Hide loading indicator if needed
+    }
 
-        if (newPassword.length < 6) {
-            newPasswordInput.error = "Password must be at least 6 characters"
-            return
-        }
-
-        if (confirmPassword.isEmpty()) {
-            confirmNewPasswordInput.error = "Please confirm your password"
-            return
-        }
-
-        if (newPassword != confirmPassword) {
-            confirmNewPasswordInput.error = "Passwords do not match"
-            return
-        }
-
-        // For demo purposes, show success message and navigate to success screen
-        // In a real app, you would update the password in the backend
+    override fun onPasswordResetSuccess() {
         Toast.makeText(this, "Password reset successfully", Toast.LENGTH_SHORT).show()
-        
-        // Navigate to Password Changed Success screen
+    }
+
+    override fun onPasswordResetFailed(message: String) {
+        Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+    }
+
+    override fun showValidationError(field: String, message: String) {
+        when (field) {
+            "newPassword" -> newPasswordInput.error = message
+            "confirmPassword" -> confirmNewPasswordInput.error = message
+        }
+    }
+
+    override fun navigateToPasswordChanged() {
         val intent = Intent(this, ActivityPasswordChanged::class.java)
         startActivity(intent)
+    }
+
+    override fun navigateBack() {
+        finish() // Go back to previous activity
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        presenter.detachView()
     }
 }

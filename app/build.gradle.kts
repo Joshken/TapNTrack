@@ -5,12 +5,12 @@ plugins {
 
 android {
     namespace = "com.example.tapntrack"
-    compileSdk = 36
+    compileSdk = 36   // ✅ Updated from 35 → 36
 
     defaultConfig {
         applicationId = "com.example.tapntrack"
-        minSdk = 36
-        targetSdk = 36
+        minSdk = 26        // ✅ Updated to support adaptive icons
+        targetSdk = 36     // ✅ Match compileSdk for best practice
         versionCode = 1
         versionName = "1.0"
 
@@ -36,7 +36,6 @@ android {
 }
 
 dependencies {
-
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.material)

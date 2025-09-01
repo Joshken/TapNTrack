@@ -8,9 +8,13 @@ import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import android.util.Patterns
+import com.example.tapntrack.mvp.model.User
+import com.example.tapntrack.mvp.model.UserRepository
+import com.example.tapntrack.mvp.presenter.ISignUpPresenter
+import com.example.tapntrack.mvp.presenter.SignUpPresenter
+import com.example.tapntrack.mvp.view.ISignUpView
 
-class ActivitySignUp : AppCompatActivity() {
+class ActivitySignUp : AppCompatActivity(), ISignUpView {
 
     private lateinit var fullNameInput: EditText
     private lateinit var emailInput: EditText
@@ -20,10 +24,16 @@ class ActivitySignUp : AppCompatActivity() {
     private lateinit var signUpButton: Button
     private lateinit var backButton: ImageView
     private lateinit var loginLink: TextView
+    
+    private lateinit var presenter: ISignUpPresenter
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_sign_up)
+
+        // Initialize presenter
+        presenter = SignUpPresenter(UserRepository())
+        presenter.attachView(this)
 
         // Initialize views
         fullNameInput = findViewById(R.id.fullNameInput)
@@ -37,78 +47,62 @@ class ActivitySignUp : AppCompatActivity() {
 
         // Set up click listeners
         signUpButton.setOnClickListener {
-            performSignUp()
+            val fullName = fullNameInput.text.toString().trim()
+            val email = emailInput.text.toString().trim()
+            val username = usernameInput.text.toString().trim()
+            val password = passwordInput.text.toString().trim()
+            val confirmPassword = confirmPasswordInput.text.toString().trim()
+            
+            presenter.signUp(fullName, email, username, password, confirmPassword)
         }
 
         backButton.setOnClickListener {
-            finish() // Go back to previous activity
+            presenter.onBackClicked()
         }
 
         loginLink.setOnClickListener {
-            finish() // Go back to login activity
+            presenter.onBackClicked()
         }
     }
 
-    private fun performSignUp() {
-        val fullName = fullNameInput.text.toString().trim()
-        val email = emailInput.text.toString().trim()
-        val username = usernameInput.text.toString().trim()
-        val password = passwordInput.text.toString().trim()
-        val confirmPassword = confirmPasswordInput.text.toString().trim()
+    override fun showProgress() {
+        // Show loading indicator if needed
+    }
 
-        // Validation
-        if (fullName.isEmpty()) {
-            fullNameInput.error = "Full name is required"
-            return
-        }
+    override fun hideProgress() {
+        // Hide loading indicator if needed
+    }
 
-        if (email.isEmpty()) {
-            emailInput.error = "Email is required"
-            return
-        }
-
-        if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
-            emailInput.error = "Please enter a valid email address"
-            return
-        }
-
-        if (username.isEmpty()) {
-            usernameInput.error = "Username is required"
-            return
-        }
-
-        if (username.length < 3) {
-            usernameInput.error = "Username must be at least 3 characters"
-            return
-        }
-
-        if (password.isEmpty()) {
-            passwordInput.error = "Password is required"
-            return
-        }
-
-        if (password.length < 6) {
-            passwordInput.error = "Password must be at least 6 characters"
-            return
-        }
-
-        if (confirmPassword.isEmpty()) {
-            confirmPasswordInput.error = "Please confirm your password"
-            return
-        }
-
-        if (password != confirmPassword) {
-            confirmPasswordInput.error = "Passwords do not match"
-            return
-        }
-
-        // For demo purposes, show success message and navigate to Dashboard
-        // In a real app, you would send the data to a backend service
+    override fun onSignUpSuccess(user: User) {
         Toast.makeText(this, "Account created successfully!", Toast.LENGTH_LONG).show()
-        
-        // Navigate to Dashboard
+    }
+
+    override fun onSignUpFailed(message: String) {
+        Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+    }
+
+    override fun showValidationError(field: String, message: String) {
+        when (field) {
+            "fullName" -> fullNameInput.error = message
+            "email" -> emailInput.error = message
+            "username" -> usernameInput.error = message
+            "password" -> passwordInput.error = message
+            "confirmPassword" -> confirmPasswordInput.error = message
+        }
+    }
+
+    override fun navigateToDashboard() {
         val intent = Intent(this, ActivityDashboard::class.java)
         startActivity(intent)
         finish() // Close signup activity
+    }
+
+    override fun navigateBack() {
+        finish() // Go back to previous activity
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        presenter.detachView()
     }
 }

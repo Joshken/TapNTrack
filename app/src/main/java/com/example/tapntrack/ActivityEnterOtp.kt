@@ -8,18 +8,28 @@ import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import com.example.tapntrack.mvp.model.UserRepository
+import com.example.tapntrack.mvp.presenter.IEnterOtpPresenter
+import com.example.tapntrack.mvp.presenter.EnterOtpPresenter
+import com.example.tapntrack.mvp.view.IEnterOtpView
 
-class ActivityEnterOtp : AppCompatActivity() {
+class ActivityEnterOtp : AppCompatActivity(), IEnterOtpView {
 
     private lateinit var emailDisplay: TextView
     private lateinit var otpInput: EditText
     private lateinit var verifyCodeButton: Button
     private lateinit var resendCodeLink: TextView
     private lateinit var backButton: ImageView
+    
+    private lateinit var presenter: IEnterOtpPresenter
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_enter_otp)
+
+        // Initialize presenter
+        presenter = EnterOtpPresenter(UserRepository())
+        presenter.attachView(this)
 
         // Initialize views
         emailDisplay = findViewById(R.id.emailDisplay)
@@ -30,49 +40,69 @@ class ActivityEnterOtp : AppCompatActivity() {
 
         // Get email from intent
         val email = intent.getStringExtra("email") ?: "user@example.com"
-        emailDisplay.text = email
+        displayEmail(email)
 
         // Set up click listeners
         verifyCodeButton.setOnClickListener {
-            verifyOtp(email)
+            val otp = otpInput.text.toString().trim()
+            presenter.verifyOtp(email, otp)
         }
 
         resendCodeLink.setOnClickListener {
-            resendCode(email)
+            presenter.resendCode(email)
         }
 
         backButton.setOnClickListener {
-            finish() // Go back to previous activity
+            presenter.onBackClicked()
         }
     }
 
-    private fun verifyOtp(email: String) {
-        val otp = otpInput.text.toString().trim()
+    override fun showProgress() {
+        // Show loading indicator if needed
+    }
 
-        // Validation
-        if (otp.isEmpty()) {
-            otpInput.error = "Please enter the reset code"
-            return
-        }
+    override fun hideProgress() {
+        // Hide loading indicator if needed
+    }
 
-        if (otp.length != 6) {
-            otpInput.error = "Please enter a 6-digit code"
-            return
-        }
+    override fun displayEmail(email: String) {
+        emailDisplay.text = email
+    }
 
-        // For demo purposes, accept any 6-digit code
-        // In a real app, you would validate the OTP against the backend
+    override fun onOtpVerified(email: String) {
         Toast.makeText(this, "Code verified successfully", Toast.LENGTH_SHORT).show()
-        
-        // Navigate to New Password screen
+    }
+
+    override fun onOtpVerificationFailed(message: String) {
+        Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+    }
+
+    override fun showValidationError(field: String, message: String) {
+        when (field) {
+            "otp" -> otpInput.error = message
+        }
+    }
+
+    override fun onResendCodeSuccess(email: String) {
+        Toast.makeText(this, "Reset code resent to $email", Toast.LENGTH_LONG).show()
+    }
+
+    override fun onResendCodeFailed(message: String) {
+        Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+    }
+
+    override fun navigateToNewPassword(email: String) {
         val intent = Intent(this, ActivityNewPassword::class.java)
         intent.putExtra("email", email)
         startActivity(intent)
     }
 
-    private fun resendCode(email: String) {
-        // For demo purposes, show a message
-        // In a real app, you would resend the OTP to the email
-        Toast.makeText(this, "Reset code resent to $email", Toast.LENGTH_LONG).show()
+    override fun navigateBack() {
+        finish() // Go back to previous activity
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        presenter.detachView()
     }
 }
