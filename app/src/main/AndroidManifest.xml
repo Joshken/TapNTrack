@@ -47,6 +47,31 @@
             android:exported="true"
             android:theme="@style/Theme.TapNTrack" />
 
+        <activity
+            android:name=".ActivityForgotPassword"
+            android:exported="true"
+            android:theme="@style/Theme.TapNTrack" />
+
+        <activity
+            android:name=".ActivitySentOtp"
+            android:exported="true"
+            android:theme="@style/Theme.TapNTrack" />
+
+        <activity
+            android:name=".ActivityEnterOtp"
+            android:exported="true"
+            android:theme="@style/Theme.TapNTrack" />
+
+        <activity
+            android:name=".ActivityNewPassword"
+            android:exported="true"
+            android:theme="@style/Theme.TapNTrack" />
+
+        <activity
+            android:name=".ActivityPasswordChanged"
+            android:exported="true"
+            android:theme="@style/Theme.TapNTrack" />
+
     </application>
 
 </manifest>
